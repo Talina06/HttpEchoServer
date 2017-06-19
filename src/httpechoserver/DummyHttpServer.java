@@ -5,12 +5,12 @@
  */
 package httpechoserver;
 
-import com.sun.net.httpserver.HttpServer;
-import static httpechoserver.HttpEchoServer.port;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  *
@@ -19,6 +19,7 @@ import java.net.Socket;
 public class DummyHttpServer {
     private int port;
     private ServerSocket server; 
+    private int workerThreadCount = 10;
     public DummyHttpServer(int port){
         this.port = port;
     }
@@ -28,16 +29,19 @@ public class DummyHttpServer {
             server = new ServerSocket(port);
             System.out.println("Server is listening on port " + port + ".");
     
-            while (true) {
+            // accept connections while there are active worker threads in the pool.
+            ExecutorService pool = Executors.newFixedThreadPool(workerThreadCount);
+            while (((ThreadPoolExecutor) pool).getActiveCount() != workerThreadCount ) {
                 // Listen for a TCP connection request.
                 Socket connectionSocket = server.accept();
                 System.out.println("New incoming connection request.");
                 //Construct object to process HTTP request message
                 WorkerThread request = new WorkerThread(connectionSocket);
-                
-                Thread thread = new Thread(request);
-                thread.start(); //start thread
+                pool.submit(request);
            }
+            System.out.println("Cannot accept further requests.");
+            pool.shutdown();
+            StopServer();
         }catch(IOException e){
             System.out.println("Accepting new requests failed for port " + port);
             System.exit(-1);
