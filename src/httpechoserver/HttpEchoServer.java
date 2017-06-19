@@ -30,7 +30,7 @@ public class HttpEchoServer {
         port = Integer.parseInt(args[0]);   
         
         DummyHttpServer server = new DummyHttpServer(port);
-        server.StartServer();
+        server.startServer();
         
     }
 }

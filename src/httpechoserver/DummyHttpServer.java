@@ -20,11 +20,12 @@ public class DummyHttpServer {
     private int port;
     private ServerSocket server; 
     private int workerThreadCount = 10;
+    
     public DummyHttpServer(int port){
         this.port = port;
     }
     
-    public void StartServer(){
+    public void startServer(){
         try{
             server = new ServerSocket(port);
             System.out.println("Server is listening on port " + port + ".");
@@ -41,14 +42,14 @@ public class DummyHttpServer {
            }
             System.out.println("Cannot accept further requests.");
             pool.shutdown();
-            StopServer();
+            stopServer();
         }catch(IOException e){
             System.out.println("Accepting new requests failed for port " + port);
             System.exit(-1);
         }
     }
     
-    public void StopServer() throws IOException{
+    public void stopServer() throws IOException{
         this.server.close(); // close the socket connection.
     }
 }

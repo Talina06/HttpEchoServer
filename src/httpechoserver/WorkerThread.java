@@ -6,8 +6,11 @@
 package httpechoserver;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
 
@@ -21,7 +24,7 @@ public class WorkerThread implements Runnable{
     // Constructor
     public WorkerThread(Socket socket)
     {
-     this.socket = socket;
+        this.socket = socket;
     }
     
     @Override
@@ -30,25 +33,37 @@ public class WorkerThread implements Runnable{
         String line;
         StringBuilder builder = new StringBuilder(); 
         BufferedReader in = null;
-        PrintWriter out = null;
         try{
             InputStreamReader is = new InputStreamReader(socket.getInputStream(), "UTF-8");
             in = new BufferedReader(is);
-            out = new PrintWriter(socket.getOutputStream());
-        }catch(IOException e){
-            System.out.println("Unable to fetch Input or Output from the request.");
-            System.exit(-1);
-        }
-        try{
-            while (true) {
-                    line = in.readLine();
-                    if(line.equals(""))
-                            break;
-                    builder.append(line + "\n");
+            try{
+                while (true) {
+                        line = in.readLine();
+                        if(line.equals(""))
+                                break;
+                        builder.append(line + "\n");
+                }
+                System.out.println("Request processed.");
+            }catch(IOException e){
+                e.printStackTrace();
+                System.out.println("Reading input failed");
+                System.exit(-1);
             }
-            System.out.println("Request processed.");
-            out.println(builder.toString());
-            out.close();
+            
+            //Sending the response back to the client.
+            OutputStream os = socket.getOutputStream();
+            String t="HTTP/1.1 200 OK\r\nContent-Length: 123\r\n"
+                    + "Content-Type: text/html\r\n\r\n<h1>Response received.</h1>"
+                    + "\r\n\r\nConnection: Closed";
+            
+            OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");
+            BufferedWriter bw = new BufferedWriter(osw);
+            bw.write(t);
+            System.out.println("Response sent back to the client.");
+            bw.flush();
+            bw.close();
+            os.close();
+            System.out.println("Request has been processed.");
             in.close();
         }catch(IOException e){
             e.printStackTrace();
