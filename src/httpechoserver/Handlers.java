@@ -21,7 +21,7 @@ public class Handlers {
         public void handle(HttpExchange hpe) throws IOException {
             //throw new UnsupportedOperationException("Not supported yet."); 
             String response = "Output received at root. Port: "
-                    + HttpEchoServer.port;
+                    + HttpEchoServerProgram.port;
             hpe.sendResponseHeaders(200, response.length());
             OutputStream os = hpe.getResponseBody();
             os.write(response.getBytes());

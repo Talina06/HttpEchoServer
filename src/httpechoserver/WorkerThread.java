@@ -13,6 +13,8 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -20,6 +22,7 @@ import java.net.Socket;
  */
 public class WorkerThread implements Runnable{
     private Socket socket;
+    private static final String CRLF = "\r\n";
  
     // Constructor
     public WorkerThread(Socket socket)
@@ -33,15 +36,24 @@ public class WorkerThread implements Runnable{
         String line;
         StringBuilder builder = new StringBuilder(); 
         BufferedReader in = null;
+        int contentLength = 0;
         try{
             InputStreamReader is = new InputStreamReader(socket.getInputStream(), "UTF-8");
             in = new BufferedReader(is);
             try{
+                line = in.readLine();
+                boolean isPost = line.startsWith("POST");
                 while (true) {
                         line = in.readLine();
-                        if(line.equals(""))
+                        if (isPost) {
+                            final String contentHeader = "Content-Length: ";
+                            if (line.startsWith(contentHeader)) {
+                                contentLength = Integer.parseInt(line.substring(contentHeader.length()));
+                            }
+                        }
+                        if(line.isEmpty())
                                 break;
-                        builder.append(line + "\n");
+                        builder.append(line + CRLF);
                 }
                 System.out.println("Request processed.");
             }catch(IOException e){
@@ -50,11 +62,16 @@ public class WorkerThread implements Runnable{
                 System.exit(-1);
             }
             
+            try {
+                Thread.sleep(8000);
+            } catch (InterruptedException ex) {
+                Logger.getLogger(WorkerThread.class.getName()).log(Level.SEVERE, null, ex);
+            }
             //Sending the response back to the client.
             OutputStream os = socket.getOutputStream();
-            String t="HTTP/1.1 200 OK\r\nContent-Length: 123\r\n"
-                    + "Content-Type: text/html\r\n\r\n<h1>Response received.</h1>"
-                    + "\r\n\r\nConnection: Closed";
+            String t="HTTP/1.1 200 OK" + CRLF + "Content-Length: " + contentLength 
+                    + CRLF + CRLF + "<h1>Response received.</h1>"
+                    + CRLF + CRLF + "Connection: Closed";
             
             OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");
             BufferedWriter bw = new BufferedWriter(osw);

@@ -8,29 +8,54 @@ package httpechoserver;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  *
  * @author Talina
  */
 public class HttpEchoServer {
+    public static volatile Queue<WorkerThread> pendingReqQueue = new LinkedList<>();
     
-    public static int port;
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String[] args) {
-        // TODO code application logic here
+    private int port;
+    private ServerSocket server; 
+    private int maxThreadCount = 3;
+    
+    public HttpEchoServer(int port){
+        this.port = port;
+    }
         
-        // accept port from as argument.
-        if(args.length != 1){
-            System.err.println("Missing port number."
-                    + "\n Usage: java HttpEchoServer <port-number>");
-        }
-        port = Integer.parseInt(args[0]);   
+    public void startServer(){
+        try{
+            server = new ServerSocket(port);
+            System.out.println("Server is listening on port " + port + ".");
         
-        DummyHttpServer server = new DummyHttpServer(port);
-        server.startServer();
-        
+            ParentThread pendingQueue =  new ParentThread();
+            Thread th= new Thread(pendingQueue);
+            th.start();
+            
+            while (true) {
+                // Listen for a TCP connection request.
+                Socket connectionSocket = server.accept();
+                System.out.println("New incoming connection request.");
+                //Construct object to process HTTP request message
+                WorkerThread request = new WorkerThread(connectionSocket);
+                pendingReqQueue.add(request);    
+    }
+            /*System.out.println("Cannot accept further requests.");
+            pool.shutdown();
+            stopServer();*/
+        }catch(IOException e){
+            System.out.println("Accepting new requests failed for port " + port);
+            System.exit(-1);
+}
+    }
+    
+    public void stopServer() throws IOException{
+        this.server.close(); // close the socket connection.
     }
 }
