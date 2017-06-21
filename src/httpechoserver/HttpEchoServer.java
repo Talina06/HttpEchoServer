@@ -23,7 +23,7 @@ public class HttpEchoServer {
     
     private int port;
     private ServerSocket server; 
-    private int maxThreadCount = 3;
+    private Config cfg =  new Config();
     
     public HttpEchoServer(int port){
         this.port = port;
@@ -39,7 +39,7 @@ public class HttpEchoServer {
             th.start();
             
             while (true) {
-                if(pendingReqQueue.size() < backLogCount){
+                if(pendingReqQueue.size() < cfg.getbacklogCount()){
                     // Listen for a TCP connection request.
                     Socket connectionSocket = server.accept();
                     System.out.println("New incoming connection request.");
