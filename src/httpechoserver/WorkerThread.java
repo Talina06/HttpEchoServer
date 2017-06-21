@@ -75,11 +75,12 @@ public class WorkerThread implements Runnable{
                 System.exit(-1);
             }
             
+            /* for testing purposes.
             try {
                 Thread.sleep(8000);
             } catch (InterruptedException ex) {
                 Logger.getLogger(WorkerThread.class.getName()).log(Level.SEVERE, null, ex);
-            }
+            }*/
             //Sending the response back to the client.
             OutputStream os = socket.getOutputStream();
             String t="HTTP/1.1 200 OK" + CRLF + "Content-Length: " + contentLength +
