@@ -33,10 +33,11 @@ public class WorkerThread implements Runnable{
     @Override
     public void run() {
         System.out.println("Processing request...");
-        String line;
-        StringBuilder builder = new StringBuilder(); 
+        String line; 
         BufferedReader in = null;
         int contentLength = 0;
+        String contentType = null;
+        StringBuilder body = new StringBuilder();
         try{
             InputStreamReader is = new InputStreamReader(socket.getInputStream(), "UTF-8");
             in = new BufferedReader(is);
@@ -44,17 +45,29 @@ public class WorkerThread implements Runnable{
                 line = in.readLine();
                 boolean isPost = line.startsWith("POST");
                 while (true) {
-                        line = in.readLine();
-                        if (isPost) {
-                            final String contentHeader = "Content-Length: ";
-                            if (line.startsWith(contentHeader)) {
-                                contentLength = Integer.parseInt(line.substring(contentHeader.length()));
-                            }
+                    line = in.readLine();
+
+                    if(line.isEmpty())
+                            break;
+                    if (isPost) {
+                        String contentHeader = "Content-Length: ";
+                        if (line.startsWith(contentHeader)) {
+                            contentLength = Integer.parseInt(line.substring(contentHeader.length()));
                         }
-                        if(line.isEmpty())
-                                break;
-                        builder.append(line + CRLF);
+                        contentType = "Content-Type: ";
+                        if (line.startsWith(contentType)) {
+                            contentType = line.substring(contentType.length());
+                        }
+
+                        // builder.append(line + CRLF);
+                    }           
                 }
+                int c = 0;
+                for (int i = 0; i < contentLength; i++) {
+                    c = in.read();
+                    body.append((char) c);
+                }  
+                
                 System.out.println("Request processed.");
             }catch(IOException e){
                 e.printStackTrace();
@@ -69,9 +82,10 @@ public class WorkerThread implements Runnable{
             }
             //Sending the response back to the client.
             OutputStream os = socket.getOutputStream();
-            String t="HTTP/1.1 200 OK" + CRLF + "Content-Length: " + contentLength 
-                    + CRLF + CRLF + "<h1>Response received.</h1>"
-                    + CRLF + CRLF + "Connection: Closed";
+            String t="HTTP/1.1 200 OK" + CRLF + "Content-Length: " + contentLength +
+                    CRLF + "Content-Type: " + contentType
+                    + CRLF + CRLF + "Payload: " + body.toString()
+                    + CRLF + CRLF + "\r\nConnection: Closed";
             
             OutputStreamWriter osw = new OutputStreamWriter(os, "UTF-8");
             BufferedWriter bw = new BufferedWriter(osw);

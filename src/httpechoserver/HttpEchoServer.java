@@ -39,13 +39,15 @@ public class HttpEchoServer {
             th.start();
             
             while (true) {
-                // Listen for a TCP connection request.
-                Socket connectionSocket = server.accept();
-                System.out.println("New incoming connection request.");
-                //Construct object to process HTTP request message
-                WorkerThread request = new WorkerThread(connectionSocket);
-                pendingReqQueue.add(request);    
-    }
+                if(pendingReqQueue.size() < backLogCount){
+                    // Listen for a TCP connection request.
+                    Socket connectionSocket = server.accept();
+                    System.out.println("New incoming connection request.");
+                    //Construct object to process HTTP request message
+                    WorkerThread request = new WorkerThread(connectionSocket);
+                    pendingReqQueue.add(request);    
+                }
+            }
             /*System.out.println("Cannot accept further requests.");
             pool.shutdown();
             stopServer();*/
