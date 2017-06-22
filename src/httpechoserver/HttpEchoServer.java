@@ -19,14 +19,15 @@ import java.util.concurrent.ThreadPoolExecutor;
  * @author Talina
  */
 public class HttpEchoServer {
-    public static volatile Queue<WorkerThread> pendingReqQueue = new LinkedList<>();
     
+    public static volatile Queue<WorkerThread> pendingReqQueue = new LinkedList<>();
     private int port;
     private ServerSocket server; 
-    private Config cfg =  new Config();
+    private Config cfg;
     
     public HttpEchoServer(int port){
         this.port = port;
+        this.cfg = new Config();
     }
         
     public void startServer(){
@@ -34,12 +35,30 @@ public class HttpEchoServer {
             server = new ServerSocket(port);
             System.out.println("Server is listening on port " + port + ".");
         
-            ParentThread pendingQueue =  new ParentThread();
-            Thread th= new Thread(pendingQueue);
-            th.start();
+            ParentThread parent =  new ParentThread();
+            Thread pth = new Thread(parent);
+            pth.start();
             
+            // Shutdown thread.
+            Thread sth= new Thread(parent){public void run(){
+                System.out.println("Shutdown hook is running");
+                try{
+                    parent.shutdown();
+                    server.close();
+                    System.out.println("Server has been shut down gracefully...");
+                }catch(IOException e){
+                    System.out.println("Server socket could not be closed.");
+                    System.exit(-1);
+                }catch(InterruptedException e){
+                    System.out.println("Running worker threads could not be closed");
+                    System.exit(-1);
+                }
+            }};
+            Runtime.getRuntime().addShutdownHook(sth);
+            
+            // Accept incoming requests in parent thread, which passes them to worker threads.
             while (true) {
-                if(pendingReqQueue.size() < cfg.getbacklogCount()){
+                if(pendingReqQueue.size() < cfg.getBacklogCount()){ 
                     // Listen for a TCP connection request.
                     Socket connectionSocket = server.accept();
                     System.out.println("New incoming connection request.");
@@ -48,16 +67,9 @@ public class HttpEchoServer {
                     pendingReqQueue.add(request);    
                 }
             }
-            /*System.out.println("Cannot accept further requests.");
-            pool.shutdown();
-            stopServer();*/
         }catch(IOException e){
             System.out.println("Accepting new requests failed for port " + port);
             System.exit(-1);
-}
-    }
-    
-    public void stopServer() throws IOException{
-        this.server.close(); // close the socket connection.
+        }
     }
 }

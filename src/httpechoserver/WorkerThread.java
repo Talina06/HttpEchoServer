@@ -43,6 +43,8 @@ public class WorkerThread implements Runnable{
             in = new BufferedReader(is);
             try{
                 line = in.readLine();
+                
+                // parsing POST request.
                 boolean isPost = line.startsWith("POST");
                 while (true) {
                     line = in.readLine();
@@ -58,14 +60,13 @@ public class WorkerThread implements Runnable{
                         if (line.startsWith(contentType)) {
                             contentType = line.substring(contentType.length());
                         }
-
                         // builder.append(line + CRLF);
                     }           
                 }
-                int c = 0;
+                int ch = 0;
                 for (int i = 0; i < contentLength; i++) {
-                    c = in.read();
-                    body.append((char) c);
+                    ch = in.read();
+                    body.append((char) ch);
                 }  
                 
                 System.out.println("Request processed.");
@@ -77,10 +78,11 @@ public class WorkerThread implements Runnable{
             
             /* for testing purposes.
             try {
-                Thread.sleep(8000);
+                Thread.sleep(60000);
             } catch (InterruptedException ex) {
                 Logger.getLogger(WorkerThread.class.getName()).log(Level.SEVERE, null, ex);
             }*/
+            
             //Sending the response back to the client.
             OutputStream os = socket.getOutputStream();
             String t="HTTP/1.1 200 OK" + CRLF + "Content-Length: " + contentLength +
@@ -101,6 +103,13 @@ public class WorkerThread implements Runnable{
             e.printStackTrace();
             System.out.println("Reading input failed");
             System.exit(-1);
+        }finally{
+            try{
+                socket.close();
+            }catch(IOException e){
+                System.out.println("Unable to close the socket.");
+                System.exit(-1);
+            }
         }
     }
 }
